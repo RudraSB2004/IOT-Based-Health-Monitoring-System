@@ -13,7 +13,7 @@ const hospitalRoutes = require("./routes/hospitalRoutes");
 
 const healthRoutes = require("./routes/HealthRoutes");
 const aiRoutes = require("./routes/aiRoutes");
-const { initSocket } = require("./socket/socket");
+const { initSocket } = require("./socket/Socket");
 
 // ======================================
 
