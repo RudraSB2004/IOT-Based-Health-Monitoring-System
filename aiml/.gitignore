@@ -1,1 +1,25 @@
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.chroma_db/
+# Environment variables
 .env
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store
