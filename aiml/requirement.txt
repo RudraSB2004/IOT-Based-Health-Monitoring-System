@@ -1,6 +1,7 @@
 flask
 flask-cors
 python-dotenv
+<<<<<<< HEAD
 
 langchain
 langchain-core
@@ -16,3 +17,9 @@ sentence-transformers
 pinecone
 
 gunicorn
+=======
+groq
+pinecone
+google-generativeai
+gunicorn
+>>>>>>> 3c00a62 (Updated Render optimized backend)
