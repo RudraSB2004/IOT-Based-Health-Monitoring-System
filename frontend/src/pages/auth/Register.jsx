@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 
 import { registerUser } from "../../redux/slices/authSlice";
-
+import toast from "react-hot-toast";
 const Register = () => {
   const dispatch = useDispatch();
 
@@ -21,6 +21,7 @@ const Register = () => {
     e.preventDefault();
 
     dispatch(registerUser(formData));
+    toast.success("Registration Successful! Please Login.");
   };
 
   return (

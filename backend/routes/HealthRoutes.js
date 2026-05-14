@@ -1,11 +1,8 @@
 const express = require("express");
 
-const {
-  createHealthData,
-  getHealthData,
-} = require("../controllers/HealthController");
-
 const router = express.Router();
+
+const { createHealthData } = require("../controllers/healthController");
 
 router.post("/", createHealthData);
 

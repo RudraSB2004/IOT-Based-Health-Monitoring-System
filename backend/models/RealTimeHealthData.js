@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const healthSchema = new mongoose.Schema(
+const realtimeHealthSchema = new mongoose.Schema(
   {
     patient: {
       type: mongoose.Schema.Types.ObjectId,
@@ -16,7 +16,7 @@ const healthSchema = new mongoose.Schema(
 
     spo2: Number,
 
-    ecg: Number,
+    ecg: [Number],
 
     status: {
       type: String,
@@ -29,4 +29,10 @@ const healthSchema = new mongoose.Schema(
   },
 );
 
-module.exports = mongoose.model("HealthData", healthSchema);
+// =====================================
+// AUTO DELETE AFTER 24 HOURS
+// =====================================
+
+realtimeHealthSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
+
+module.exports = mongoose.model("RealtimeHealthData", realtimeHealthSchema);

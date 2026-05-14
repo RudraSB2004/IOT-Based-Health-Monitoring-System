@@ -6,75 +6,132 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  Tooltip,
+  Filler,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement);
+import { useMemo } from "react";
 
-const LiveECG = ({ ecgValues }) => {
-  const data = {
-    labels: ecgValues.map((_, i) => i),
+// ======================================
 
-    datasets: [
-      {
-        data: ecgValues,
+ChartJS.register(
+  CategoryScale,
 
-        borderColor: "#00ffff",
+  LinearScale,
 
-        borderWidth: 3,
+  PointElement,
 
-        tension: 0.4,
+  LineElement,
 
-        pointRadius: 0,
-      },
-    ],
-  };
+  Tooltip,
 
-  const options = {
-    responsive: true,
+  Filler,
+);
 
-    animation: {
-      duration: 300,
-    },
+// ======================================
 
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
+const LiveECG = ({ ecgValues = [] }) => {
+  // ====================================
+  // MEMOIZED DATA
+  // ====================================
 
-    scales: {
-      x: {
-        display: false,
-      },
+  const data = useMemo(
+    () => ({
+      labels: ecgValues.map((_, i) => i),
 
-      y: {
-        grid: {
-          color: "rgba(255,255,255,0.1)",
+      datasets: [
+        {
+          data: ecgValues,
+
+          borderColor: "#00ffff",
+
+          backgroundColor: "rgba(0,255,255,0.1)",
+
+          borderWidth: 2,
+
+          tension: 0.25,
+
+          pointRadius: 0,
+
+          fill: true,
+        },
+      ],
+    }),
+    [ecgValues],
+  );
+
+  // ====================================
+  // OPTIONS
+  // ====================================
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+
+      maintainAspectRatio: false,
+
+      animation: false,
+
+      plugins: {
+        legend: {
+          display: false,
+        },
+
+        tooltip: {
+          enabled: false,
         },
       },
-    },
-  };
+
+      scales: {
+        x: {
+          display: false,
+        },
+
+        y: {
+          ticks: {
+            color: "rgba(255,255,255,0.5)",
+          },
+
+          grid: {
+            color: "rgba(255,255,255,0.08)",
+          },
+        },
+      },
+    }),
+    [],
+  );
+
+  // ====================================
 
   return (
     <div
       className="
-    glass
-    rounded-3xl
-    p-6
-    glow
-    "
-    >
-      <h2
-        className="
-      text-2xl
-      mb-5
-      text-cyan-400
+      glass
+      rounded-3xl
+      p-6
+      glow
+      h-[400px]
       "
-      >
-        Live ECG Wave
-      </h2>
+    >
+      <div className="flex justify-between items-center mb-5">
+        <h2
+          className="
+          text-2xl
+          text-cyan-400
+          "
+        >
+          Live ECG Wave
+        </h2>
 
-      <Line data={data} options={options} />
+        <div className="flex items-center gap-2 text-green-400 text-sm">
+          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          LIVE
+        </div>
+      </div>
+
+      <div className="h-[300px]">
+        <Line data={data} options={options} />
+      </div>
     </div>
   );
 };
