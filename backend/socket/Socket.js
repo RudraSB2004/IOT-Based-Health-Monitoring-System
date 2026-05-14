@@ -1,6 +1,6 @@
 const socketIO = require("socket.io");
 
-const { setSocketIO } = require("../controllers/healthController");
+const { setSocketIO } = require("../controllers/HealthController");
 
 const initSocket = (server) => {
   const io = socketIO(server, {
