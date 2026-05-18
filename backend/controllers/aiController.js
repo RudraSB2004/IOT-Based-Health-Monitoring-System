@@ -11,7 +11,8 @@ const RealtimeHealthData = require("../models/RealtimeHealthData");
 // ========================================
 
 const FLASK_AI_URL =
-  process.env.FLASK_AI_URL || "http://127.0.0.1:8000/api/agent";
+  process.env.FLASK_AI_URL ||
+  "https://iot-based-health-monitoring-system-2.onrender.com/api/agent";
 
 console.log("🌍 FLASK_AI_URL =", FLASK_AI_URL);
 
