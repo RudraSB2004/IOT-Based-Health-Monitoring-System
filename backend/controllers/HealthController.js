@@ -1,18 +1,27 @@
 const mongoose = require("mongoose");
 
 const RealtimeHealthData = require("../models/RealtimeHealthData");
+
 let ioInstance;
+
+// =====================================
+// STORE SOCKET INSTANCE
+// =====================================
 
 const setSocketIO = (io) => {
   ioInstance = io;
 };
+
+// =====================================
+// CREATE HEALTH DATA
+// =====================================
 
 const createHealthData = async (req, res) => {
   try {
     let { patientId, temperature, humidity, heartRate, spo2, ecg } = req.body;
 
     // =================================
-    // VALIDATION
+    // VALIDATE PATIENT ID
     // =================================
 
     if (!mongoose.Types.ObjectId.isValid(patientId)) {
@@ -23,7 +32,7 @@ const createHealthData = async (req, res) => {
     }
 
     // =================================
-    // CONVERT TO NUMBERS
+    // CONVERT VALUES TO NUMBER
     // =================================
 
     temperature = Number(temperature);
@@ -35,7 +44,7 @@ const createHealthData = async (req, res) => {
     spo2 = Number(spo2);
 
     // =================================
-    // INVALID DATA CHECK
+    // INVALID SENSOR CHECK
     // =================================
 
     if (
@@ -51,14 +60,17 @@ const createHealthData = async (req, res) => {
     }
 
     // =================================
-    // ECG LIMIT
+    // ECG VALIDATION
     // =================================
 
     if (!Array.isArray(ecg)) {
       ecg = [];
     }
 
-    ecg = ecg.slice(-100);
+    ecg = ecg
+      .map((v) => Number(v))
+      .filter((v) => !isNaN(v))
+      .slice(-100);
 
     // =================================
     // STATUS LOGIC
@@ -93,11 +105,37 @@ const createHealthData = async (req, res) => {
     });
 
     // =================================
+    // CLEAN SOCKET PAYLOAD
+    // =================================
+
+    const socketPayload = {
+      _id: report._id,
+
+      patient: report.patient,
+
+      temperature: report.temperature,
+
+      humidity: report.humidity,
+
+      heartRate: report.heartRate,
+
+      spo2: report.spo2,
+
+      ecg: report.ecg,
+
+      status: report.status,
+
+      createdAt: report.createdAt,
+    };
+
+    // =================================
     // SOCKET EMIT
     // =================================
 
+    console.log("Emitting new health data");
+
     if (ioInstance) {
-      ioInstance.emit("newHealthData", report);
+      ioInstance.emit("newHealthData", socketPayload);
     }
 
     // =================================
@@ -109,20 +147,21 @@ const createHealthData = async (req, res) => {
 
       message: "Realtime health data stored",
 
-      data: report,
+      data: socketPayload,
     });
   } catch (error) {
     console.error(error);
 
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }
 };
+
+// =====================================
+
 module.exports = {
   createHealthData,
-
   setSocketIO,
 };

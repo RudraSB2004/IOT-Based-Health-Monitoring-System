@@ -1,10 +1,25 @@
 import { io } from "socket.io-client";
 
-// Use Vite env variable, fallback to CRA env variable, then fallback to localhost
-const socketURL =
-  //   import.meta.env?.VITE_SOCKET_URL ||
-  process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
+// ======================================
+// SOCKET URL
+// ======================================
 
-const socket = io(socketURL);
+const socketURL =
+  process.env.REACT_APP_SOCKET_URL ||
+  "https://iot-based-health-monitoring-system.onrender.com";
+
+// ======================================
+// SOCKET INSTANCE
+// ======================================
+
+const socket = io(socketURL, {
+  transports: ["websocket", "polling"],
+
+  reconnection: true,
+
+  reconnectionAttempts: Infinity,
+
+  reconnectionDelay: 1000,
+});
 
 export default socket;

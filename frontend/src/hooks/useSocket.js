@@ -1,115 +1,383 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-import socket from "../services/socket";
+import { useSelector } from "react-redux";
 
-import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
-import { setLiveData, addAlert } from "../redux/slices/healthSlice";
+import { motion } from "framer-motion";
 
-import toast from "react-hot-toast";
+import gsap from "gsap";
 
-const useSocket = () => {
-  const dispatch = useDispatch();
+import HumanModel from "../../three/HumanModel";
 
-  // ================================
-  // PREVENT TOAST SPAM
-  // ================================
+import FloatingOrb from "../../three/FloatingOrb";
 
-  const lastAlertTime = useRef(0);
+import MedicalParticles from "../../three/MedicalParticles";
+
+import NeuralBackground from "../../three/NeuralBackground";
+
+import HologramCard from "../../effects/HologramCard";
+
+import ScanLine from "../../effects/ScanLine";
+
+import AIAnalytics from "../../components/analytics/AIAnalytics";
+
+import LiveECG from "../../components/realtime/LiveECG";
+
+import NotificationPanel from "../../components/alerts/NotificationPanel";
+
+import { analyzeHealth } from "../../utils/healthAnalyzer";
+
+import AIAssistant from "../../components/ai/AIAssistant";
+
+import useSocket from "../../hooks/useSocket";
+
+// ========================================
+
+const Dashboard = () => {
+  // ======================================
+  // SOCKET INIT
+  // ======================================
+
+  useSocket();
+
+  // ======================================
+
+  const navigate = useNavigate();
+
+  // ======================================
+  // REDUX STATE
+  // ======================================
+
+  const { latestVitals, ecgStream, alerts, connectionStatus } = useSelector(
+    (state) => state.health,
+  );
+
+  const { profile } = useSelector((state) => state.patient);
+
+  // ======================================
+  // CONNECTION STATE
+  // ======================================
+
+  const isConnected = connectionStatus;
+
+  // ======================================
+  // SAFE FALLBACKS
+  // ======================================
+
+  const latest = latestVitals || {
+    temperature: 0,
+
+    humidity: 0,
+
+    heartRate: 0,
+
+    spo2: 0,
+
+    status: "normal",
+  };
+
+  // ======================================
+  // AI ANALYSIS
+  // ======================================
+
+  const analysis = isConnected
+    ? analyzeHealth(latest)
+    : {
+        condition: "Waiting...",
+
+        score: 0,
+
+        recommendation: "Awaiting sensor data",
+      };
+
+  // ======================================
+  // ECG STREAM
+  // ======================================
+
+  const ecgValues =
+    ecgStream.length > 0 ? ecgStream.slice(-250) : Array(250).fill(0);
+
+  // ======================================
+  // GSAP ANIMATION
+  // ======================================
 
   useEffect(() => {
-    // ==============================
-    // CONNECTION EVENTS
-    // ==============================
+    gsap.from(".dashboard-title", {
+      y: -100,
 
-    socket.on("connect", () => {
-      console.log("Socket Connected:", socket.id);
+      opacity: 0,
 
-      toast.success("Realtime Connected");
+      duration: 1.5,
     });
 
-    socket.on("disconnect", () => {
-      console.log("Socket Disconnected");
+    gsap.from(".dashboard-card", {
+      opacity: 0,
 
-      toast.error("Realtime Disconnected");
+      y: 100,
+
+      stagger: 0.2,
+
+      duration: 1.2,
     });
+  }, []);
 
-    // ==============================
-    // HEALTH DATA EVENT
-    // ==============================
+  // ======================================
 
-    const handleHealthData = (data) => {
-      console.log("Live Health Data:", data);
+  return (
+    <div className="relative min-h-screen text-white overflow-hidden bg-[#020617]">
+      {/* ================================= */}
+      {/* BACKGROUND EFFECTS */}
+      {/* ================================= */}
 
-      // ============================
-      // UPDATE REDUX
-      // ============================
+      <NeuralBackground />
 
-      dispatch(setLiveData(data));
+      <MedicalParticles />
 
-      // ============================
-      // ALERT LOGIC
-      // ============================
+      <FloatingOrb />
 
-      const now = Date.now();
+      {/* ================================= */}
+      {/* MAIN CONTENT */}
+      {/* ================================= */}
 
-      // Prevent spam every second
+      <div className="relative z-10 p-6 lg:p-10">
+        {/* ================================= */}
+        {/* PROFILE WARNING */}
+        {/* ================================= */}
 
-      if (now - lastAlertTime.current < 10000) {
-        return;
-      }
+        {!profile && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: -20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            className="mb-8 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/50 flex flex-col sm:flex-row justify-between items-center gap-4 backdrop-blur-md"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
 
-      // ============================
-      // CRITICAL ALERTS
-      // ============================
+              <div>
+                <h3 className="text-yellow-400 font-bold">
+                  Biometric Data Missing
+                </h3>
 
-      if (data.status === "critical") {
-        dispatch(addAlert(data));
+                <p className="text-yellow-200/70 text-sm">
+                  AI forecasting requires your physical profile for accurate
+                  health analysis.
+                </p>
+              </div>
+            </div>
 
-        toast.error("Critical Patient Condition!");
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
 
-        lastAlertTime.current = now;
-      }
+                navigate("/setup/patient");
+              }}
+              className="whitespace-nowrap px-6 py-2 bg-yellow-500 text-slate-900 font-bold rounded-xl hover:bg-yellow-400 transition shadow-[0_0_15px_rgba(234,179,8,0.3)]"
+            >
+              Complete Profile
+            </button>
+          </motion.div>
+        )}
 
-      // ============================
-      // LOW SPO2
-      // ============================
+        {/* ================================= */}
+        {/* HEADER */}
+        {/* ================================= */}
 
-      if (data.spo2 < 90) {
-        toast.error("Low Oxygen Detected!");
+        <motion.div
+          initial={{
+            opacity: 0,
+          }}
+          animate={{
+            opacity: 1,
+          }}
+          className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10"
+        >
+          <div>
+            <h1 className="dashboard-title text-5xl lg:text-7xl font-black neon-text">
+              HEALTH AI
+            </h1>
 
-        lastAlertTime.current = now;
-      }
+            <p className="text-gray-400 mt-3 text-lg">
+              AI-Powered Smart Healthcare Monitoring Platform
+            </p>
+          </div>
 
-      // ============================
-      // HEART RATE ALERT
-      // ============================
+          {/* ============================= */}
+          {/* STATUS CARD */}
+          {/* ============================= */}
 
-      if (data.heartRate > 120) {
-        toast.error("Abnormal Heart Rate!");
+          <motion.div
+            animate={{
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              repeat: Infinity,
+              duration: 2,
+            }}
+            className={`mt-6 lg:mt-0 px-6 py-4 rounded-2xl border backdrop-blur-xl ${
+              isConnected
+                ? "bg-cyan-500/10 border-cyan-400"
+                : "bg-slate-800/50 border-slate-600"
+            }`}
+          >
+            <h2 className={isConnected ? "text-cyan-400" : "text-gray-400"}>
+              System Status
+            </h2>
 
-        lastAlertTime.current = now;
-      }
-    };
+            <p
+              className={`text-2xl font-bold ${
+                isConnected ? "text-green-400" : "text-gray-500"
+              }`}
+            >
+              {isConnected ? "SENSORS ONLINE" : "AWAITING HARDWARE"}
+            </p>
+          </motion.div>
+        </motion.div>
 
-    // ==============================
-    // REGISTER LISTENER
-    // ==============================
+        {/* ================================= */}
+        {/* HEALTH STATS */}
+        {/* ================================= */}
 
-    socket.on("newHealthData", handleHealthData);
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {/* TEMPERATURE */}
 
-    // ==============================
-    // CLEANUP
-    // ==============================
+          <motion.div
+            whileHover={{
+              scale: 1.03,
+            }}
+            className="dashboard-card hologram rounded-3xl p-6"
+          >
+            <h2 className="text-gray-400">Temperature</h2>
 
-    return () => {
-      socket.off("newHealthData", handleHealthData);
+            <h1 className="text-5xl font-bold text-cyan-400 mt-4">
+              {latest.temperature}°C
+            </h1>
+          </motion.div>
 
-      socket.off("connect");
+          {/* HUMIDITY */}
 
-      socket.off("disconnect");
-    };
-  }, [dispatch]);
+          <motion.div
+            whileHover={{
+              scale: 1.03,
+            }}
+            className="dashboard-card hologram rounded-3xl p-6"
+          >
+            <h2 className="text-gray-400">Humidity</h2>
+
+            <h1 className="text-5xl font-bold text-cyan-400 mt-4">
+              {latest.humidity}%
+            </h1>
+          </motion.div>
+
+          {/* HEART RATE */}
+
+          <motion.div
+            whileHover={{
+              scale: 1.03,
+            }}
+            className="dashboard-card hologram rounded-3xl p-6"
+          >
+            <h2 className="text-gray-400">Heart Rate</h2>
+
+            <h1 className="text-5xl font-bold text-red-400 mt-4">
+              {latest.heartRate} BPM
+            </h1>
+          </motion.div>
+
+          {/* SPO2 */}
+
+          <motion.div
+            whileHover={{
+              scale: 1.03,
+            }}
+            className="dashboard-card hologram rounded-3xl p-6"
+          >
+            <h2 className="text-gray-400">SpO2</h2>
+
+            <h1 className="text-5xl font-bold text-green-400 mt-4">
+              {latest.spo2}%
+            </h1>
+          </motion.div>
+        </div>
+
+        {/* ================================= */}
+        {/* MAIN GRID */}
+        {/* ================================= */}
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {/* ================================= */}
+          {/* LEFT SIDE */}
+          {/* ================================= */}
+
+          <div className="space-y-8">
+            {/* HUMAN MODEL */}
+
+            <HologramCard>
+              <ScanLine />
+
+              <HumanModel />
+            </HologramCard>
+
+            {/* ECG */}
+
+            <div className="dashboard-card">
+              <LiveECG ecgValues={ecgValues} />
+            </div>
+          </div>
+
+          {/* ================================= */}
+          {/* RIGHT SIDE */}
+          {/* ================================= */}
+
+          <div className="space-y-8">
+            {/* AI ANALYTICS */}
+
+            <div className="dashboard-card">
+              <AIAnalytics analysis={analysis} />
+            </div>
+
+            {/* EMERGENCY SCANNER */}
+
+            <HologramCard>
+              <h2 className="text-3xl text-cyan-400 mb-5">Emergency Scanner</h2>
+
+              <div className="relative h-48 rounded-3xl overflow-hidden bg-cyan-500/10 border border-cyan-500">
+                <motion.div
+                  animate={{
+                    y: [0, 180, 0],
+                  }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 3,
+                  }}
+                  className="absolute left-0 top-0 w-full h-2 bg-cyan-400 blur-sm"
+                />
+
+                <div className="flex items-center justify-center h-full text-4xl font-bold text-cyan-400">
+                  ACTIVE
+                </div>
+              </div>
+            </HologramCard>
+
+            {/* ALERTS */}
+
+            <div className="dashboard-card">
+              <NotificationPanel alerts={alerts} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AIAssistant />
+    </div>
+  );
 };
 
-export default useSocket;
+export default Dashboard;

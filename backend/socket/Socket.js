@@ -8,6 +8,8 @@ const initSocket = (server) => {
       origin: "*",
       methods: ["GET", "POST"],
     },
+
+    transports: ["websocket", "polling"],
   });
 
   io.on("connection", (socket) => {
@@ -17,10 +19,6 @@ const initSocket = (server) => {
       console.log("Client disconnected:", socket.id);
     });
   });
-
-  // ====================================
-  // STORE SOCKET INSTANCE
-  // ====================================
 
   setSocketIO(io);
 };
